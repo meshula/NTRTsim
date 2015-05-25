@@ -152,7 +152,7 @@ class SPSA(NTRTJobMaster):
             totalParams = (numStates + 1) * (numHidden) + (numHidden + 1) * numOutputs
 
             for i in range(0,  totalParams) :
-                neuralParams.append(random.uniform(pMin, pMax))
+                neuralParams.append(0.0)
 
             newParams['neuralParams'] = neuralParams
 
@@ -237,7 +237,7 @@ class SPSA(NTRTJobMaster):
                 
             except KeyError:
                 
-                self.runTrials(i, i)
+                self.runTrials(i, i, -1)
                 scores = controller['scores']
                 
                 controller['maxScore'] = max(scores)
@@ -245,7 +245,7 @@ class SPSA(NTRTJobMaster):
             
             except ValueError:
                 
-                self.runTrials(i, i)
+                self.runTrials(i, i, -1)
                 scores = controller['scores']
                 
                 controller['maxScore'] = max(scores)
@@ -263,7 +263,7 @@ class SPSA(NTRTJobMaster):
         
         if (useAvg):
             success = (currentGeneration[0]['avgScore'] < currentGeneration[1]['avgScore']
-                       or (currentGeneration[0]['avgScore'] - 10.0 < currentGeneration[1]['avgScore']
+                       or (currentGeneration[0]['avgScore'] - 20.0 < currentGeneration[1]['avgScore']
                            and currentGeneration[0]['maxScore'] < currentGeneration[1]['maxScore']))
         else:
             success = currentGeneration[0]['maxScore'] < currentGeneration[1]['maxScore']
@@ -342,7 +342,7 @@ class SPSA(NTRTJobMaster):
                     
                 except KeyError:
                     
-                    self.runTrials(i, i)
+                    self.runTrials(i, i, -1)
                     scores = controller['scores']
                     
                     controller['maxScore'] = max(scores)
@@ -350,7 +350,7 @@ class SPSA(NTRTJobMaster):
                 
                 except ValueError:
                     
-                    self.runTrials(i, i)
+                    self.runTrials(i, i, -1)
                     scores = controller['scores']
                     
                     controller['maxScore'] = max(scores)
@@ -460,7 +460,7 @@ class SPSA(NTRTJobMaster):
 
         return i
     
-    def runTrials(self, st, nt):
+    def runTrials(self, st, nt, kArgs):
         
         jobList = []
         
@@ -482,8 +482,8 @@ class SPSA(NTRTJobMaster):
             # provides a filename for a pre-existing file
             fileName = self.getNewFile(i)
             
-            for j in self.jConf['terrain']:
                 # All args to be passed to subprocess must be strings
+            for j in self.jConf['terrain']:
                 args = {'filename' : fileName,
                         'resourcePrefix' : self.jConf['resourcePath'],
                         'path'     : self.jConf['lowerPath'],
@@ -492,7 +492,7 @@ class SPSA(NTRTJobMaster):
                         'terrain'  : j}
                 if (i <= nt and i >= st):
                     jobList.append(EvolutionJob(args))
-                    self.trialTotal += 1 
+                    self.trialTotal += 1
 
         # Run the jobs
         conSched = ConcurrentScheduler(jobList, self.numProcesses)
@@ -522,7 +522,7 @@ class SPSA(NTRTJobMaster):
                     maxScore = score
 
 
-        avgScore = totalScore / float(len(completedJobs) * len(self.jConf['terrain']) )
+        avgScore = totalScore / float(len(completedJobs))
         logFile = open('evoLog.txt', 'a')
         logFile.write(str(self.trialTotal) + ',' + str(maxScore) + ',' + str(avgScore) +'\n')
         logFile.close()
@@ -578,7 +578,7 @@ class SPSA(NTRTJobMaster):
             if n > 0:
                 
                 # Zero should already have been evaluated
-                self.runTrials(1, 1)
+                self.runTrials(1, 1, -1)
                 
                 for p in self.prefixes:
                     
@@ -603,9 +603,9 @@ class SPSA(NTRTJobMaster):
             genSize = len(self.currentGeneration[p])
             
             if n > 0:
-                self.runTrials(genSize - 2, genSize - 1)
+                self.runTrials(genSize - 2, genSize - 1, 0)
             else:
-                self.runTrials(0, genSize - 1)
+                self.runTrials(0, genSize - 1, 0)
 
             self.k += 1
             
